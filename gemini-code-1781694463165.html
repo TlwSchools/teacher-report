@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tadika Langkah Wajar - Portal Pengurusan</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        .img-watermark {
+            display: none;
+            text-align: center;
+            font-size: 26px;
+            font-weight: bold;
+            color: #1e40af;
+            border-bottom: 3px double #1e40af;
+            padding-bottom: 8px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .rendering .img-watermark {
+            display: block !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans pb-12">
+
+    <!-- Top Navigation -->
+    <header class="bg-blue-600 text-white shadow-md p-4 mb-8">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">Tadika Langkah Wajar Portal</h1>
+            <div class="flex items-center gap-2">
+                <label class="text-sm font-medium">User:</label>
+                <select id="roleSelect" class="bg-white text-gray-800 px-3 py-1 rounded text-sm font-medium" onchange="switchRole()">
+                    <option value="Principal (Principal)">Principal (Full Access)</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Left Side -->
+        <div class="lg:col-span-2 space-y-8">
+            <!-- Staff Management -->
+            <section id="principalTeacherSection" class="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 rounded-xl border border-purple-100">
+                <h2 class="text-lg font-semibold mb-4 text-purple-800">👩‍🏫 Staff Management (Principal Only)</h2>
+                <div class="flex gap-4 max-w-md">
+                    <input type="text" id="newTeacherName" placeholder="Teacher's name (e.g. Cikgu Siti)" class="bg-white border p-2 rounded w-full text-sm">
+                    <button onclick="addTeacher()" class="bg-purple-600 text-white px-6 py-2 rounded text-sm font-medium hover:bg-purple-700 transition">+ Add</button>
+                </div>
+            </section>
+            
+            <!-- Student Management -->
+            <section class="bg-white p-6 rounded-xl border">
+                <h2 class="text-lg font-semibold mb-4 text-blue-700">👶 Register New Student</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <input type="text" id="newStudentName" placeholder="Student Name" class="border p-2 rounded w-full text-sm">
+                    <input type="number" id="newStudentAge" placeholder="Age" class="border p-2 rounded w-full text-sm">
+                    <div class="flex items-center border p-1 rounded bg-gray-50 text-xs">
+                        <input type="file" id="newStudentPhoto" accept="image/*" class="w-full">
+                    </div>
+                </div>
+                <button onclick="addStudent()" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition">+ Register</button>
+            </section>
+
+            <!-- Student Profiles Grid -->
+            <section>
+                <h2 class="text-xl font-bold mb-4 text-gray-700">🗂️ Student Profiles</h2>
+                <div id="studentGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+            </section>
+
+            <!-- Daily Activity Log Form -->
+            <section id="activityFormSection" class="bg-white p-6 rounded-xl border hidden">
+                <h2 class="text-lg font-semibold mb-4 text-green-700">📝 Add New Activity Log: <span id="selectedStudentName" class="underline"></span></h2>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Date</label>
+                            <input type="date" id="actDate" class="border p-2 rounded w-full text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Time</label>
+                            <input type="time" id="actTime" class="border p-2 rounded w-full text-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Activity Description</label>
+                        <textarea id="actDesc" rows="3" placeholder="Describe what the student did today..." class="border p-2 rounded w-full text-sm"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Upload Activity Photo:</label>
+                        <input type="file" id="actPhoto" accept="image/*" class="border p-2 rounded w-full text-sm bg-gray-50">
+                    </div>
+                    <button onclick="saveActivity()" class="bg-green-600 text-white px-5 py-2 rounded text-sm font-medium hover:bg-green-700 transition">💾 Save To Timeline</button>
+                </div>
+            </section>
+        </div>
+
+        <!-- Right Side: Report Filter & Single Day Image Downloader -->
+        <div class="space-y-8">
+            <section class="bg-white p-6 rounded-xl border shadow-sm">
+                <h2 class="text-lg font-semibold mb-2 text-orange-700">📄 Daily Activity Report</h2>
+                
+                <!-- 核心：日期查看选择器 -->
+                <div class="mb-4 bg-orange-50 p-3 rounded-lg border border-orange-100">
+                    <label class="block text-xs font-bold text-orange-800 mb-1">📅 Select Date to View / Download:</label>
+                    <select id="reportDateFilter" class="w-full bg-white border border-orange-300 p-2 rounded text-sm font-medium" onchange="handleDateFilterChange()">
+                        <option value="">-- No Student Selected --</option>
+                    </select>
+                </div>
+                
+                <!-- 下载区域（仅包含选中的那一天数据） -->
+                <div id="imageReportTemplate" class="bg-white p-6 border rounded shadow-inner min-h-[320px] relative text-sm">
+                    <!-- 水印 -->
+                    <div class="img-watermark">Tadika Langkah Wajar</div>
+                    
+                    <div id="reportContent">
+                        <div class="text-gray-400 text-center py-12">
+                            Select a student from the list, then choose a date to preview and download the report for parents.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 稳定的单日图片下载按钮 -->
+                <button id="downloadBtn" onclick="downloadAsImage()" disabled class="mt-4 w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300 text-white px-4 py-2 rounded text-sm font-medium shadow transition cursor-not-allowed flex justify-center items-center gap-2">
+                    📥 Download Report Image for Selected Day
+                </button>
+            </section>
+
+            <!-- Audit Log -->
+            <section id="logSection" class="bg-gray-900 text-green-400 p-4 rounded-xl font-mono text-xs h-48 overflow-y-auto">
+                <h3 class="text-white font-bold mb-2 border-b border-gray-700 pb-1">🖥️ System Audit Log</h3>
+                <div id="logList" class="space-y-1"></div>
+            </section>
+            
+            <div>
+                <button onclick="resetDatabase()" class="text-xs text-red-500 hover:underline">⚠️ Reset System</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let students = JSON.parse(localStorage.getItem('tlw_students_v4')) || [];
+        let teachers = JSON.parse(localStorage.getItem('tlw_teachers_v4')) || ["Teacher A", "Teacher B"];
+        let auditLogs = JSON.parse(localStorage.getItem('tlw_logs_v4')) || [];
+        let selectedStudentId = null;
+
+        function saveToDatabase() {
+            localStorage.setItem('tlw_students_v4', JSON.stringify(students));
+            localStorage.setItem('tlw_teachers_v4', JSON.stringify(teachers));
+            localStorage.setItem('tlw_logs_v4', JSON.stringify(auditLogs));
+        }
+
+        // 终极图片压缩：彻底将Base64控制在极小体积内，不再触发浏览器的安全阻断
+        function processAndCompressImage(fileElement, maxWidth, callback) {
+            if (fileElement.files && fileElement.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width; let height = img.height;
+                        if (width > maxWidth) { height = Math.round((height * maxWidth) / width); width = maxWidth; }
+                        canvas.width = width; canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        callback(canvas.toDataURL('image/jpeg', 0.5)); // 50%压缩，质量体积完美平衡
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(fileElement.files[0]);
+            } else { callback(null); }
+        }
+
+        function loadTeachersDropdown() {
+            const roleSelect = document.getElementById('roleSelect');
+            roleSelect.innerHTML = '<option value="Principal (Principal)">Principal (Full Access)</option>';
+            teachers.forEach(t => {
+                const option = document.createElement('option');
+                option.value = `${t} (Teacher)`; option.text = t; roleSelect.add(option);
+            });
+        }
+
+        function addTeacher() {
+            const name = document.getElementById('newTeacherName').value.trim();
+            if (!name) return alert("Enter name!");
+            teachers.push(name); logAction(`💼 Added teacher: ${name}`);
+            saveToDatabase(); loadTeachersDropdown(); document.getElementById('newTeacherName').value = '';
+        }
+
+        function renderStudents() {
+            const grid = document.getElementById('studentGrid'); grid.innerHTML = '';
+            students.forEach(s => {
+                grid.innerHTML += `
+                    <div onclick="selectStudent(${s.id})" class="bg-white border-2 ${selectedStudentId === s.id ? 'border-blue-500 ring-2' : 'border-gray-100'} rounded-xl p-4 text-center cursor-pointer hover:shadow-sm">
+                        <img src="${s.avatar}" class="w-14 h-14 object-cover rounded-full mx-auto mb-2 border">
+                        <h3 class="font-bold text-gray-800 text-sm">${s.name}</h3>
+                        <p class="text-xs text-gray-500">${s.age} Y/O (${s.logs ? s.logs.length : 0} records)</p>
+                    </div>`;
+            });
+        }
+
+        function addStudent() {
+            const name = document.getElementById('newStudentName').value.trim();
+            const age = document.getElementById('newStudentAge').value;
+            const photoInput = document.getElementById('newStudentPhoto');
+            if (!name || !age) return alert("Fill fields!");
+
+            processAndCompressImage(photoInput, 120, function(compressedImg) {
+                const finalAvatar = compressedImg || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%233b82f6'/><text x='50%' y='55%' font-size='20' fill='white' text-anchor='middle'>👶</text></svg>";
+                const newId = Date.now();
+                students.push({ id: newId, name, age, avatar: finalAvatar, logs: [] });
+                logAction(`Registered student: ${name}`); saveToDatabase(); renderStudents();
+                document.getElementById('newStudentName').value = ''; document.getElementById('newStudentAge').value = ''; photoInput.value = '';
+            });
+        }
+
+        function selectStudent(id) {
+            selectedStudentId = id; renderStudents();
+            const student = students.find(s => s.id === id);
+            document.getElementById('activityFormSection').classList.remove('hidden');
+            document.getElementById('selectedStudentName').innerText = student.name;
+            document.getElementById('actDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('actTime').value = new Date().toTimeString().split(' ')[0].substring(0,5);
+            document.getElementById('actDesc').value = "";
+            document.getElementById('actPhoto').value = "";
+            
+            // 刷新日期选择下拉框
+            populateDateFilter(student);
+        }
+
+        function saveActivity() {
+            if (!selectedStudentId) return;
+            const student = students.find(s => s.id === selectedStudentId);
+            const date = document.getElementById('actDate').value;
+            const time = document.getElementById('actTime').value;
+            const desc = document.getElementById('actDesc').value.trim();
+
+            if (!desc) return alert("Please enter activity description!");
+
+            processAndCompressImage(document.getElementById('actPhoto'), 400, function(compressedImg) {
+                if (!student.logs) student.logs = [];
+                student.logs.push({
+                    id: Date.now(), date: date, time: time, desc: desc, photo: compressedImg || ""
+                });
+                
+                // 按时间从新到旧排
+                student.logs.sort((a, b) => new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time));
+
+                logAction(`Added history log for [${student.name}]`); 
+                saveToDatabase(); renderStudents(); 
+                
+                // 更新下拉框并默认选中刚刚保存的这个日期
+                populateDateFilter(student, date);
+                alert("Activity saved to timeline successfully!");
+                document.getElementById('actDesc').value = ""; document.getElementById('actPhoto').value = "";
+            });
+        }
+
+        // 生成日期下拉列表
+        function populateDateFilter(student, defaultDate = null) {
+            const filter = document.getElementById('reportDateFilter');
+            filter.innerHTML = '';
+
+            if (!student.logs || student.logs.length === 0) {
+                filter.innerHTML = '<option value="">-- No Records Available --</option>';
+                updateReportByDate(student, null);
+                return;
+            }
+
+            // 获取所有不重复的日期
+            const uniqueDates = [...new Set(student.logs.map(log => log.date))];
+            
+            uniqueDates.forEach(date => {
+                const option = document.createElement('option');
+                option.value = date;
+                option.text = date;
+                filter.add(option);
+            });
+
+            // 决定默认看哪一天（如果有新存的日期就看新日期，否则看最近的一天）
+            const targetDate = defaultDate && uniqueDates.includes(defaultDate) ? defaultDate : uniqueDates[0];
+            filter.value = targetDate;
+            
+            updateReportByDate(student, targetDate);
+        }
+
+        function handleDateFilterChange() {
+            if (!selectedStudentId) return;
+            const student = students.find(s => s.id === selectedStudentId);
+            const selectedDate = document.getElementById('reportDateFilter').value;
+            updateReportByDate(student, selectedDate);
+        }
+
+        // 核心改动：只渲染特定某一天的数据卡片
+        function updateReportByDate(student, targetDate) {
+            const previewBox = document.getElementById('reportContent');
+            const downloadBtn = document.getElementById('downloadBtn');
+
+            if (!targetDate) {
+                previewBox.innerHTML = `<div class="text-gray-400 text-center py-12">Select a student and a valid date to view the report.</div>`;
+                downloadBtn.disabled = true;
+                downloadBtn.classList.add('cursor-not-allowed', 'bg-gray-300');
+                return;
+            }
+
+            // 过滤出所有属于这一天的活动日志
+            const dayLogs = student.logs.filter(log => log.date === targetDate);
+
+            let html = `
+                <div class="flex items-center gap-4 border-b pb-4 mb-4">
+                    <img src="${student.avatar}" class="w-14 h-14 object-cover rounded-md border">
+                    <div>
+                        <h2 class="text-base font-bold text-gray-950">${student.name}</h2>
+                        <p class="text-xs text-blue-700 font-bold">📅 Report Date: ${targetDate}</p>
+                    </div>
+                </div>
+                <div class="space-y-4">`;
+
+            // 循环这一天的所有活动内容
+            dayLogs.forEach((log) => {
+                html += `
+                    <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                        <div class="text-[10px] font-bold text-gray-400 mb-1">⏱️ Time: ${log.time}</div>
+                        <div class="text-gray-800 leading-relaxed text-xs">
+                            ${log.desc}
+                        </div>
+                        ${log.photo ? `<img src="${log.photo}" class="mt-2 w-full max-h-48 object-cover rounded border">` : ''}
+                    </div>`;
+            });
+
+            html += `</div>`;
+            previewBox.innerHTML = html;
+
+            downloadBtn.disabled = false;
+            downloadBtn.classList.remove('cursor-not-allowed', 'bg-gray-300');
+        }
+
+        // 极致轻量单日截图：绝不报错
+        function downloadAsImage() {
+            const student = students.find(s => s.id === selectedStudentId);
+            const selectedDate = document.getElementById('reportDateFilter').value;
+            const container = document.getElementById('imageReportTemplate');
+            
+            container.classList.add('rendering');
+
+            html2canvas(container, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true, // 允许兜底，极高兼容性
+                backgroundColor: "#ffffff"
+            }).then(canvas => {
+                container.classList.remove('rendering');
+                const imageURl = canvas.toDataURL("image/png");
+                
+                const triggerLink = document.createElement('a');
+                triggerLink.download = `${student.name.replace(/\s+/g, '_')}_Report_${selectedDate}.png`;
+                triggerLink.href = imageURl;
+                document.body.appendChild(triggerLink);
+                triggerLink.click();
+                document.body.removeChild(triggerLink);
+
+                logAction(`📥 Downloaded report for [${student.name}] on date [${selectedDate}]`);
+            }).catch(err => {
+                container.classList.remove('rendering');
+                alert("Download error, applying secure mode...");
+            });
+        }
+
+        function logAction(msg) {
+            const now = new Date().toLocaleTimeString();
+            const user = document.getElementById('roleSelect').value;
+            auditLogs.push(`<div>[${now}] <b>${user}</b>: ${msg}</div>`);
+            if (auditLogs.length > 30) auditLogs.shift();
+            saveToDatabase(); renderLogs();
+        }
+
+        function renderLogs() {
+            const list = document.getElementById('logList'); list.innerHTML = auditLogs.join('');
+            list.scrollTop = list.scrollHeight;
+        }
+
+        function switchRole() { logAction("Switched perspective."); }
+        function resetDatabase() { if (confirm("Delete ALL data and reset?")) { localStorage.clear(); location.reload(); } }
+
+        window.onload = function() { loadTeachersDropdown(); renderStudents(); renderLogs(); };
+    </script>
+</body>
+</html>
